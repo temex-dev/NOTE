@@ -31,7 +31,7 @@ It follows the original Kilo editor concept and rewrites the implementation from
   - Go to line
 
 ## Roadmap checklist
-- [ ] Line counter
+- [x] Line counter
 - [ ] Select text
 - [ ] Copy and paste text (Ctrl + X, C, V)
 - [ ] Undo (Ctrl + Z)

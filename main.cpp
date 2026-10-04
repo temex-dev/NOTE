@@ -15,7 +15,7 @@
 #include <fcntl.h>
 
 /*** defines ***/
-#define NOTE_VERSION "1.0.0"
+#define NOTE_VERSION "1.1.0"
 #define NOTE_TAB_STOP 8
 #define NOTE_QUIT_TIMES 3
 
@@ -83,6 +83,7 @@ struct editorConfig {
     time_t statusmsg_time;
     struct editorSyntax *syntax;
     struct termios orig_termios;
+    bool show_line_count;
 };
 
 struct editorConfig E;
@@ -514,7 +515,14 @@ void editorInsertNewLine() {
     E.cx = 0;
 }
 void editorDelChar() {
-    if (E.cy == E.numrows) { return; }
+    if (E.cy == E.numrows) {
+        if (E.numrows > 0 && E.row[E.numrows - 1].size == 0) {
+            editorDelRow(E.numrows - 1);
+            E.cy = E.numrows;
+            E.cx = 0;
+        }
+        return;
+    }
     if (E.cx == 0 && E.cy == 0) { return; }
 
     erow *row = &E.row[E.cy];
@@ -696,11 +704,20 @@ void abFree(struct abuf *ab) {
 }
 
 /*** output ***/
+int editorLineNumberGutterWidth() {
+    if (!E.show_line_count || E.numrows == 0) { return 0; }
+
+    char line_count[16];
+    int gutter_width = snprintf(line_count, sizeof(line_count), "%d", E.numrows) + 1;
+    return gutter_width < E.screencols ? gutter_width : 0;
+}
 void editorScroll() {
     E.rx = 0;
     if (E.cy < E.numrows) {
         E.rx = editorRowCxToRx(&E.row[E.cy], E.cx);
     }
+
+    int text_screen_width = E.screencols - editorLineNumberGutterWidth();
 
     if (E.cy < E.rowoff) {
         E.rowoff = E.cy;
@@ -711,16 +728,22 @@ void editorScroll() {
     if (E.rx < E.coloff) {
         E.coloff = E.rx;
     }
-    if (E.rx >= E.coloff + E.screencols) {
-        E.coloff = E.rx - E.screencols + 1;
+    if (E.rx >= E.coloff + text_screen_width) {
+        E.coloff = E.rx - text_screen_width + 1;
     }
 }
 
 void editorDrawRows(struct abuf *ab) {
     int y;
+    int gutter_width = editorLineNumberGutterWidth();
+    int text_screen_width = E.screencols - gutter_width;
+
     for (y = 0; y < E.screenrows; y++) {
         int filerow = y + E.rowoff;
         if (filerow >= E.numrows) {
+            for (int i = 0; i < gutter_width; i++) {
+                abAppend(ab, " ", 1);
+            }
             if (E.numrows == 0 && y == E.screenrows / 3) {
                 char welcome[80];
                 int welcomelen = snprintf(welcome, sizeof(welcome), "NOTE -- version %s", NOTE_VERSION);
@@ -743,11 +766,20 @@ void editorDrawRows(struct abuf *ab) {
             }
         }
         else {
-            int len = E.row[filerow].rsize - E.coloff;
+            int row_offset = E.coloff;
+            if (row_offset > E.row[filerow].rsize) {
+                row_offset = E.row[filerow].rsize;
+            }
+            int len = E.row[filerow].rsize - row_offset;
             if (len < 0) { len = 0; }
-            if (len > E.screencols) { len = E.screencols; }
-            char *c = &E.row[filerow].render[E.coloff];
-            unsigned char *hl = &E.row[filerow].hl[E.coloff];
+            if (len > text_screen_width) { len = text_screen_width; }
+            if (gutter_width > 0) {
+                char line_number[16];
+                int number_len = snprintf(line_number, sizeof(line_number), "%*d ", gutter_width - 1, filerow + 1);
+                abAppend(ab, line_number, number_len);
+            }
+            char *c = &E.row[filerow].render[row_offset];
+            unsigned char *hl = &E.row[filerow].hl[row_offset];
             int current_color = -1;
             int j;
             for (j = 0; j < len; j++) {
@@ -830,7 +862,7 @@ void editorRefreshScreen() {
 
     char buf[32];
     snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy - E.rowoff) + 1,
-                                                                (E.rx - E.coloff) + 1);
+                        (E.rx - E.coloff) + editorLineNumberGutterWidth() + 1);
     abAppend(&ab, buf, strlen(buf));
 
     abAppend(&ab, "\x1b[?25h", 6);
@@ -845,7 +877,6 @@ void editorSetStatusMessage(const char *fmt, ...) {
     va_end(ap);
     E.statusmsg_time = time(NULL);
 }
-
 
 /*** input ***/
 char *editorPrompt(const char *prompt, void (*callback)(char *, int)) {
@@ -1020,6 +1051,8 @@ void editorProcessKeypress() {
 
         case BACKSPACE:
         case CTRL_KEY('h'):
+            editorDelChar();
+            break;
 
         case CTRL_KEY('l'):
         case '\x1b':
@@ -1045,6 +1078,7 @@ void initEditor() {
     E.statusmsg[0] = '\0';
     E.statusmsg_time = 0;
     E.syntax = NULL;
+    E.show_line_count = true;
 
     if (getWindowSize(&E.screenrows, &E.screencols) == -1) die("getWindowSize");
     E.screenrows -= 2;
@@ -1057,7 +1091,7 @@ int main(int argc, char *argv[]) {
         editorOpen(argv[1]);
     }
 
-    editorSetStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find | Ctrl-G = go to line");
+    editorSetStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find | Ctrl-G = go to");
 
     while(1) {
         editorRefreshScreen();
