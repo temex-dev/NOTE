@@ -27,6 +27,8 @@ It follows the original Kilo editor concept and rewrites the implementation from
   - Save File
 - Ctrl + F
   - Find phrase in file
+- Ctrl + G
+  - Go to line
 
 ## Roadmap checklist
 - [ ] Line counter

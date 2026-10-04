@@ -888,6 +888,30 @@ char *editorPrompt(const char *prompt, void (*callback)(char *, int)) {
         if (callback) { callback(buf, c); }
     }
 }
+void editorGoToLine() {
+    if (E.numrows == 0) {
+        editorSetStatusMessage("No lines in file");
+        return;
+    }
+
+    char *input = editorPrompt("Go to line: %s", NULL);
+    if (input == NULL) { return; }
+
+    char *endptr;
+    errno = 0;
+    long line_number = strtol(input, &endptr, 10);
+    if (errno == ERANGE || endptr == input || *endptr != '\0' ||
+        line_number < 1 || line_number > E.numrows) {
+        editorSetStatusMessage("Line must be between 1 and %d", E.numrows);
+    }
+    else {
+        E.cy = static_cast<int>(line_number - 1);
+        E.cx = 0;
+        E.coloff = 0;
+    }
+
+    free(input);
+}
 void editorMoveCursor(int key) {
     erow *row  = (E.cy >= E.numrows) ? NULL : &E.row[E.cy];
 
@@ -946,6 +970,14 @@ void editorProcessKeypress() {
             editorSave();
             break;
 
+        case CTRL_KEY('f'):
+            editorFind();
+            break;
+
+        case CTRL_KEY('g'):
+            editorGoToLine();
+            break;
+
         case HOME_KEY:
             E.cx = 0;
             break;
@@ -956,12 +988,6 @@ void editorProcessKeypress() {
             }
             break;
 
-        case CTRL_KEY('f'):
-            editorFind();
-            break;
-
-        case BACKSPACE:
-        case CTRL_KEY('h'):
         case DEL_KEY:
             if (c == DEL_KEY) { editorMoveCursor(ARROW_RIGHT); }
             editorDelChar();
@@ -991,6 +1017,10 @@ void editorProcessKeypress() {
         case ARROW_RIGHT:
             editorMoveCursor(c);
             break;
+
+        case BACKSPACE:
+        case CTRL_KEY('h'):
+
         case CTRL_KEY('l'):
         case '\x1b':
             break;
@@ -1027,7 +1057,7 @@ int main(int argc, char *argv[]) {
         editorOpen(argv[1]);
     }
 
-    editorSetStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find");
+    editorSetStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find | Ctrl-G = go to line");
 
     while(1) {
         editorRefreshScreen();
