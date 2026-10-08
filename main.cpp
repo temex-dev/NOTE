@@ -31,7 +31,13 @@ enum editorKey {
     HOME_KEY,
     END_KEY,
     PAGE_UP,
-    PAGE_DOWN
+    PAGE_DOWN,
+    CTRL_ARROW_LEFT,
+    CTRL_ARROW_RIGHT,
+    CTRL_ARROW_UP,
+    CTRL_ARROW_DOWN,
+    MOUSE_WHEEL_UP,
+    MOUSE_WHEEL_DOWN
 };
 enum editorHighlight {
     HL_NORMAL = 0,
@@ -121,6 +127,8 @@ void die(const char *s) {
     exit(1);
 }
 void disableRawMode() {
+    const char *mouse_off = "\x1b[?1006l\x1b[?1000l";
+    write(STDOUT_FILENO, mouse_off, strlen(mouse_off));
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.orig_termios) == -1) die("tcsetattr");
 }
 void enableRawMode() {
@@ -136,6 +144,8 @@ void enableRawMode() {
     raw.c_cc[VTIME] = 1;
 
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) die("tcsetattr");
+    const char *mouse_on = "\x1b[?1000h\x1b[?1006h";
+    write(STDOUT_FILENO, mouse_on, strlen(mouse_on));
 }
 int editorReadKey() {
     int nread;
@@ -145,12 +155,49 @@ int editorReadKey() {
     }
 
     if (c == '\x1b') {
-        char seq[3];
+        char seq[5];
 
         if (read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
         if (read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
 
         if (seq[0] == '[') {
+            if (seq[1] == '<') {
+                int button = 0;
+                char mouse_char;
+                while (true) {
+                    if (read(STDIN_FILENO, &mouse_char, 1) != 1) return '\x1b';
+                    if (mouse_char == ';') break;
+                    if (mouse_char < '0' || mouse_char > '9') return '\x1b';
+                    button = button * 10 + (mouse_char - '0');
+                }
+
+                do {
+                    if (read(STDIN_FILENO, &mouse_char, 1) != 1) return '\x1b';
+                } while (mouse_char != 'M' && mouse_char != 'm');
+
+                if (mouse_char == 'M') {
+                    switch (button & 0x43) {
+                        case 64: return MOUSE_WHEEL_UP;
+                        case 65: return MOUSE_WHEEL_DOWN;
+                    }
+                }
+                return '\x1b';
+            }
+            if (seq[1] == '1') {
+                if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
+                if (seq[2] == ';') {
+                    if (read(STDIN_FILENO, &seq[3], 1) != 1) return '\x1b';
+                    if (seq[3] == '5') {
+                        if (read(STDIN_FILENO, &seq[4], 1) != 1) return '\x1b';
+                        switch (seq[4]) {
+                            case 'A': return CTRL_ARROW_UP;
+                            case 'B': return CTRL_ARROW_DOWN;
+                            case 'C': return CTRL_ARROW_RIGHT;
+                            case 'D': return CTRL_ARROW_LEFT;
+                        }
+                    }
+                }
+            }
             if (seq[1] >= '0' && seq[1] <= '9') {
                 if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
                 if (seq[2] == '~') {
@@ -975,6 +1022,60 @@ void editorMoveCursor(int key) {
         E.cx = rowlen;
     }
 }
+void editorJumpCursor(int c) {
+    erow *row = (E.cy >= E.numrows) ? NULL : &E.row[E.cy];
+
+    switch (c) {
+        case CTRL_ARROW_RIGHT:
+            if (row == NULL) break;
+
+            while (E.cx < row->size && row->chars[E.cx] != ' ' && row->chars[E.cx] != '\t') {
+                E.cx++;
+            }
+            while (E.cx < row->size &&
+                (row->chars[E.cx] == ' ' || row->chars[E.cx] == '\t')) {
+                E.cx++;
+            }
+            break;
+
+        case CTRL_ARROW_LEFT:
+            if (row == NULL) break;
+
+            while (E.cx > 0 && (row->chars[E.cx - 1] == ' ' || row->chars[E.cx - 1] == '\t')) {
+                E.cx--;
+            }
+            while (E.cx > 0 && row->chars[E.cx - 1] != ' ' && row->chars[E.cx - 1] != '\t') {
+                E.cx--;
+            }
+            break;
+        case CTRL_ARROW_DOWN:
+            if (E.cy >= E.numrows) break;
+
+            while (E.cy < E.numrows && E.row[E.cy].size > 0) E.cy++;
+            while (E.cy < E.numrows && E.row[E.cy].size == 0) E.cy++;
+
+            if (E.cy >= E.numrows && E.numrows > 0) E.cy = E.numrows - 1;
+            break;
+
+        case CTRL_ARROW_UP:
+            if (E.numrows == 0) break;
+            if (E.cy >= E.numrows) E.cy = E.numrows - 1;
+
+            if (E.row[E.cy].size > 0) {
+                while (E.cy > 0 && E.row[E.cy - 1].size > 0) E.cy--;
+                if (E.cy > 0) E.cy--;
+            }
+            while (E.cy > 0 && E.row[E.cy].size == 0) E.cy--;
+            while (E.cy > 0 && E.row[E.cy - 1].size > 0) E.cy--;
+            break;
+
+        default:
+            break;
+    }
+    if (E.cy < E.numrows && E.cx > E.row[E.cy].size) {
+        E.cx = E.row[E.cy].size;
+    }
+}
 void editorProcessKeypress() {
     static int quit_times = NOTE_QUIT_TIMES;
 
@@ -1047,6 +1148,21 @@ void editorProcessKeypress() {
         case ARROW_LEFT:
         case ARROW_RIGHT:
             editorMoveCursor(c);
+            break;
+
+        case CTRL_ARROW_RIGHT:
+        case CTRL_ARROW_LEFT:
+        case CTRL_ARROW_UP:
+        case CTRL_ARROW_DOWN:
+            editorJumpCursor(c);
+            break;
+
+        case MOUSE_WHEEL_UP:
+            editorMoveCursor(ARROW_UP);
+            break;
+
+        case MOUSE_WHEEL_DOWN:
+            editorMoveCursor(ARROW_DOWN);
             break;
 
         case BACKSPACE:
