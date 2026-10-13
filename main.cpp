@@ -14,12 +14,17 @@
 #include <stdarg.h>
 #include <fcntl.h>
 
+#include "keywords_lists.hpp"
+
 /*** defines ***/
-#define NOTE_VERSION "1.1.0"
-#define NOTE_TAB_STOP 8
+#define NOTE_VERSION "1.1.1"
+#define NOTE_TAB_STOP 4
 #define NOTE_QUIT_TIMES 3
 
+const char *CONFIG_LOCATION = "~/.config/note/config.json";
+
 #define CTRL_KEY(k) ((k) & 0x1f)
+
 
 enum editorKey {
     BACKSPACE = 127,
@@ -95,11 +100,17 @@ struct editorConfig {
 struct editorConfig E;
 
 /*** filetypes ***/
-const char *C_HL_extensions[] = { ".c", ".h", ".cpp", NULL };
-const char *C_HL_keywords[] = {
-    "switch", "if", "while", "for", "break", "continue", "return", "else", "struct", "union", "typedef", "static", "enum", "class", "case",
-    "int|", "long|", "double|", "float|", "char|", "unsigned|", "signed|", "void|", NULL
-};
+const char *C_HL_extensions[] = { ".c", ".h", ".cpp", ".hpp", NULL };
+const char *SQL_HL_extensions[] = { ".sql", ".pks", ".pkb", ".pck", ".ddl", ".dml", NULL };
+const char *HTML_HL_extensions[] = { ".html", ".htm", NULL };
+const char *JS_HL_extensions[] = { ".js", ".mjs", ".cjs", NULL };
+const char *CSS_HL_extensions[] = { ".css", ".scss", NULL };
+const char *HTML_HL_keywords_sets[] = { *HTML_HL_keywords, *JS_HL_keywords, *CSS_HL_keywords };
+const char *PY_HL_extensions[] = { ".py", NULL};
+
+/* TODO: add these extensions:
+    java, cs, ts|tsx, php, sh|bash, go, rs, kt, swift, xml, yml|yaml
+*/
 
 struct editorSyntax HLDB[] = {
     {
@@ -109,6 +120,41 @@ struct editorSyntax HLDB[] = {
         "//", "/*", "*/",
         HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
     },
+    {
+        "sql",
+        SQL_HL_extensions,
+        SQL_HL_keywords,
+        "--", "/*", "*/",
+        HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
+    },
+    {
+        "html",
+        HTML_HL_extensions,
+        HTML_HL_keywords_sets,
+        "", "<!--", "-->",
+        HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
+    },
+    {
+        "js",
+        JS_HL_extensions,
+        JS_HL_keywords,
+        "//", "/*", "*/",
+        HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
+    },
+    {
+        "css",
+        CSS_HL_extensions,
+        CSS_HL_keywords,
+        "", "/*", "*/",
+        HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
+    },
+    {
+        "py",
+        PY_HL_extensions,
+        PY_HL_keywords,
+        "#", "", "",
+        HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
+    }
 };
 
 #define HLDB_ENTRIES (sizeof(HLDB) / sizeof(HLDB[0]))
@@ -1204,7 +1250,20 @@ int main(int argc, char *argv[]) {
     enableRawMode();
     initEditor();
     if (argc >= 2) {
-        editorOpen(argv[1]);
+        if (strcmp(argv[1], "--config-edit") == 0) {
+            editorOpen((char *)"~/.config/note/config.json");
+        }
+        else if (strcmp(argv[1], "--config-path") == 0) {
+            printf(CONFIG_LOCATION, "~ config file location: %d");
+            return 0;
+        }
+        else if (strcmp(argv[1], "--help") == 0) {
+            printf("help");
+            return 0;
+        }
+        else {
+            editorOpen(argv[1]);
+        }
     }
 
     editorSetStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find | Ctrl-G = go to");
