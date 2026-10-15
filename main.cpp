@@ -185,8 +185,9 @@ struct editorSyntax HLDB[] = {
         "php",
         PHP_HL_extensions,
         PHP_HL_keywords_sets,
-        "//", "/*", "*/"
-    },
+        "//", "/*", "*/",
+        HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
+    }
 
 };
 
