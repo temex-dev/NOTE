@@ -105,11 +105,16 @@ const char *SQL_HL_extensions[] = { ".sql", ".pks", ".pkb", ".pck", ".ddl", ".dm
 const char *HTML_HL_extensions[] = { ".html", ".htm", NULL };
 const char *JS_HL_extensions[] = { ".js", ".mjs", ".cjs", NULL };
 const char *CSS_HL_extensions[] = { ".css", ".scss", NULL };
-const char *HTML_HL_keywords_sets[] = { *HTML_HL_keywords, *JS_HL_keywords, *CSS_HL_keywords };
+const char *HTML_HL_keywords_sets[] = { *HTML_HL_keywords, *JS_HL_keywords, *CSS_HL_keywords, *PHP_HL_keywords };
 const char *PY_HL_extensions[] = { ".py", NULL};
+const char *JAVA_HL_extensions[] = { ".java", NULL };
+const char *CS_HL_extensions[] = { ".cs", ".csx", NULL };
+const char *TS_HL_extensions[] = { ".ts", ".tsx", ".mts", ".cts", NULL };
+const char *PHP_HL_extensions[] = { ".php", NULL };
+const char *PHP_HL_keywords_sets[] = { *PHP_HL_keywords, *HTML_HL_keywords };
 
 /* TODO: add these extensions:
-    java, cs, ts|tsx, php, sh|bash, go, rs, kt, swift, xml, yml|yaml
+    sh|bash, go, rs, kt, swift, xml, yml|yaml
 */
 
 struct editorSyntax HLDB[] = {
@@ -154,7 +159,35 @@ struct editorSyntax HLDB[] = {
         PY_HL_keywords,
         "#", "", "",
         HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
-    }
+    },
+    {
+        "java",
+        JAVA_HL_extensions,
+        JAVA_HL_keywords,
+        "//", "/*", "*/",
+        HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
+    },
+    {
+        "cs",
+        CS_HL_extensions,
+        CS_HL_keywords,
+        "//", "/*", "*/",
+        HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
+    },
+    {
+        "ts",
+        TS_HL_extensions,
+        TS_HL_keywords,
+        "//", "/*", "*/",
+        HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
+    },
+    {
+        "php",
+        PHP_HL_extensions,
+        PHP_HL_keywords_sets,
+        "//", "/*", "*/"
+    },
+
 };
 
 #define HLDB_ENTRIES (sizeof(HLDB) / sizeof(HLDB[0]))
@@ -917,7 +950,10 @@ void editorDrawStatusBar(struct abuf *ab) {
     char status[80], rstatus[80];
     int len = snprintf(status, sizeof(status), "%.20s - %d lines %s", E.filename ? E.filename : "[No Name]",
                                                                                         E.numrows, E.dirty ? "(modified)" : "");
-    int rlen = snprintf(rstatus, sizeof(rstatus), "%s | %d/%d", E.syntax ? E.syntax->filetype : "no ft", E.cy + 1, E.numrows);
+    int line_characters = E.cy < E.numrows ? E.row[E.cy].size : 0;
+    int rlen = snprintf(rstatus, sizeof(rstatus), "%s | ln: %d/%d chr: %d/%d",
+                        E.syntax ? E.syntax->filetype : "no ft", E.cy + 1, E.numrows,
+                        E.cx + 1, line_characters);
     if (len > E.screencols) { len = E.screencols; }
     abAppend(ab, status, len);
     while (len < E.screencols) {

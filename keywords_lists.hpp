@@ -368,3 +368,195 @@ inline const char *PY_HL_keywords[] = {
     "setattr", "slice", "sorted", "staticmethod", "str", "sum", "super",
     "tuple", "vars", "zip", NULL
 };
+
+inline const char *JAVA_HL_keywords[] = {
+    // ===== Data types =====
+    "boolean", "byte", "char", "short", "int", "long", "float", "double",
+    "void",
+
+    // ===== Control flow =====
+    "if", "else", "switch", "case", "default", "for", "while", "do", "break",
+    "continue", "return",
+
+    // ===== Exception handling =====
+    "try", "catch", "finally", "throw", "throws", "assert",
+
+    // ===== Object-oriented =====
+    "class", "interface", "extends", "implements", "new", "this", "super",
+    "abstract", "final", "static", "enum", "instanceof",
+
+    // ===== Access control =====
+    "public", "protected", "private",
+
+    // ===== Package and import =====
+    "package", "import",
+
+    // ===== Multithreading =====
+    "synchronized", "volatile",
+
+    // ===== Serialization and native code =====
+    "transient", "native",
+
+    // ===== Modifier =====
+    "strictfp",
+
+    // ===== Reserved but unused =====
+    "const", "goto",
+
+    // ===== Literals =====
+    "true", "false", "null",
+
+    // ===== Contextual keywords (only keywords in some positions) =====
+    "sealed", "non-sealed", "permits", "record", "var", "yield", "when",
+    "exports", "module", "open", "opens", "provides", "requires", "to",
+    "transitive", "uses", "with",
+
+    // ===== Common java.lang types =====
+    "String", "Object", "Integer", "Long", "Double", "Float", "Boolean",
+    "Character", "Byte", "Short", "Math", "System", "Exception",
+    "RuntimeException", "Thread", "Runnable", "StringBuilder",
+
+    // ===== Common annotations =====
+    "@Override", "@Deprecated", "@SuppressWarnings", "@FunctionalInterface",
+    "@SafeVarargs", NULL
+};
+
+inline const char *CS_HL_keywords[] = {
+    // ===== Data types =====
+    "bool", "byte", "sbyte", "char", "short", "ushort", "int", "uint", "long",
+    "ulong", "float", "double", "decimal", "string", "object", "void",
+
+    // ===== Control flow =====
+    "if", "else", "switch", "case", "default", "for", "foreach", "while", "do",
+    "break", "continue", "goto", "return",
+
+    // ===== Exception handling =====
+    "try", "catch", "finally", "throw",
+
+    // ===== Object-oriented =====
+    "class", "interface", "struct", "enum", "delegate", "event", "new", "this",
+    "base", "abstract", "sealed", "virtual", "override",
+
+    // ===== Access control =====
+    "public", "private", "protected", "internal",
+
+    // ===== Namespace and using =====
+    "namespace", "using",
+
+    // ===== Modifiers =====
+    "static", "const", "readonly", "volatile", "extern", "unsafe",
+
+    // ===== Parameters and references =====
+    "ref", "out", "in", "params",
+
+    // ===== Type and conversion =====
+    "as", "is", "typeof", "sizeof",
+
+    // ===== Operators =====
+    "operator", "implicit", "explicit",
+
+    // ===== Memory management and synchronization =====
+    "lock", "fixed", "stackalloc",
+
+    // ===== Checked and unchecked =====
+    "checked", "unchecked",
+
+    // ===== Literals =====
+    "true", "false", "null",
+
+    // ===== Contextual keywords (only keywords in some positions) =====
+    "var", "dynamic", "async", "await", "nameof", "record", "required",
+    "partial", "get", "set", "init", "value", "yield", "with", "when", "where",
+    "add", "remove", "alias", "and", "or", "not", "args", "file", "global",
+    "managed", "unmanaged", "notnull", "nint", "nuint", "scoped",
+
+    // ===== LINQ query keywords =====
+    "from", "select", "group", "orderby", "join", "let", "into", "on",
+    "equals", "by", "ascending", "descending",
+
+    // ===== Preprocessor directives =====
+    "#if", "#else", "#elif", "#endif", "#define", "#undef", "#region",
+    "#endregion", "#pragma", "#nullable", "#warning", "#error", "#line",
+
+    // ===== Common types =====
+    "String", "Object", "Int32", "Int64", "Double", "Boolean", "Char", "Byte",
+    "DateTime", "Guid", "Console", "Math", "Convert", "Exception", "Task",
+    "List", "Dictionary", "HashSet", "Queue", "Stack", "Action", "Func",
+    "IEnumerable", "IDisposable", NULL
+};
+
+inline const char *TS_HL_keywords[] = {
+    // ===== Reserved words (inherited from JavaScript) =====
+    "break", "case", "catch", "class", "const", "continue", "debugger",
+    "default", "delete", "do", "else", "enum", "export", "extends", "false",
+    "finally", "for", "function", "if", "import", "in", "instanceof", "new",
+    "null", "return", "super", "switch", "this", "throw", "true", "try",
+    "typeof", "var", "void", "while", "with",
+
+    // ===== Strict-mode reserved words =====
+    "implements", "interface", "let", "package", "private", "protected",
+    "public", "static", "yield",
+
+    // ===== Primitive and special types =====
+    "any", "unknown", "never", "number", "string", "boolean", "symbol",
+    "bigint", "object", "undefined",
+
+    // ===== TypeScript keywords (contextual) =====
+    "abstract", "accessor", "as", "asserts", "async", "await", "constructor",
+    "declare", "from", "get", "global", "infer", "is", "keyof", "module",
+    "namespace", "of", "out", "override", "readonly", "require", "satisfies",
+    "set", "type", "unique", "using",
+
+    // ===== Built-in utility types =====
+    "Partial", "Required", "Readonly", "Record", "Pick", "Omit", "Exclude",
+    "Extract", "NonNullable", "Parameters", "ConstructorParameters",
+    "ReturnType", "InstanceType", "ThisParameterType", "OmitThisParameter",
+    "ThisType", "Awaited", "NoInfer", "Uppercase", "Lowercase", "Capitalize",
+    "Uncapitalize",
+
+    // ===== Common globals =====
+    "Array", "Promise", "Map", "Set", "WeakMap", "WeakSet", "Date", "Error",
+    "Object", "String", "Number", "Boolean", "Symbol", "BigInt", "RegExp",
+    "JSON", "Math", "console", "globalThis", "NaN", "Infinity", "exports"
+};
+
+inline const char *PHP_HL_keywords[] = {
+    // ===== Keywords (the full table on the W3Schools page) =====
+    "abstract", "and", "as", "break", "callable", "case", "catch", "class",
+    "clone", "const", "continue", "declare", "default", "do", "echo", "else",
+    "elseif", "empty", "enddeclare", "endfor", "endforeach", "endif",
+    "endswitch", "endwhile", "extends", "final", "finally", "fn", "for",
+    "foreach", "function", "global", "goto", "if", "implements", "include",
+    "include_once", "instanceof", "insteadof", "interface", "isset", "list",
+    "namespace", "new", "or", "print", "private", "protected", "public",
+    "require", "require_once", "return", "static", "switch", "throw", "trait",
+    "try", "unset", "use", "var", "while", "xor", "yield", "yield from",
+
+    // ===== Reserved keywords missing from the page =====
+    "array", "die", "eval", "exit", "match", "readonly", "__halt_compiler",
+
+    // ===== Contextual keyword =====
+    "enum",
+
+    // ===== Literals =====
+    "true", "false", "null",
+
+    // ===== Class references =====
+    "self", "parent",
+
+    // ===== Types =====
+    "int", "float", "string", "bool", "iterable", "object", "mixed", "void",
+    "never",
+
+    // ===== Magic constants =====
+    "__CLASS__", "__DIR__", "__FILE__", "__FUNCTION__", "__LINE__",
+    "__METHOD__", "__NAMESPACE__", "__TRAIT__",
+
+    // ===== Superglobals =====
+    "$GLOBALS", "$_SERVER", "$_GET", "$_POST", "$_FILES", "$_COOKIE",
+    "$_SESSION", "$_REQUEST", "$_ENV",
+
+    // ===== Open and close tags =====
+    "<?php", "<?=", "?>"
+};
+
