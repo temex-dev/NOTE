@@ -38,7 +38,7 @@ It follows the original Kilo editor concept and rewrites the implementation from
 - [ ] Duplicate current line (Ctrl + D)
 - [ ] Better cursor movement (more shortcuts)
 - [ ] Config file
-- [ ] More filetypes syntax hightlighting
+- [x] More filetypes syntax hightlighting
 - [ ] Install script
 
 ## Build

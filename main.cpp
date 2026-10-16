@@ -17,7 +17,7 @@
 #include "keywords_lists.hpp"
 
 /*** defines ***/
-#define NOTE_VERSION "1.1.1"
+#define NOTE_VERSION "1.2.0"
 #define NOTE_TAB_STOP 4
 #define NOTE_QUIT_TIMES 3
 
