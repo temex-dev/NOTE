@@ -560,3 +560,127 @@ inline const char *PHP_HL_keywords[] = {
     "<?php", "<?=", "?>"
 };
 
+inline const char *GO_HL_keywords[] = {
+    // ===== Keywords (the 25 on the GeeksforGeeks page) =====
+    "break", "case", "chan", "const", "continue", "default", "defer", "else",
+    "fallthrough", "for", "func", "go", "goto", "if", "import", "interface",
+    "map", "package", "range", "return", "select", "struct", "switch", "type",
+    "var",
+
+    // ===== Predeclared constants and zero value =====
+    "true", "false", "iota", "nil",
+
+    // ===== Predeclared types =====
+    "any", "bool", "byte", "comparable", "complex64", "complex128", "error",
+    "float32", "float64", "int", "int8", "int16", "int32", "int64", "rune",
+    "string", "uint", "uint8", "uint16", "uint32", "uint64", "uintptr",
+
+    // ===== Built-in functions =====
+    "append", "cap", "clear", "close", "complex", "copy", "delete", "imag",
+    "len", "make", "max", "min", "new", "panic", "print", "println", "real",
+    "recover", NULL
+};
+
+inline const char *RS_HL_keywords[] = {
+    // ===== Strict keywords (all editions, `_` left out on purpose) =====
+    "as", "async", "await", "break", "const", "continue", "crate", "dyn",
+    "else", "enum", "extern", "false", "fn", "for", "if", "impl", "in", "let",
+    "loop", "match", "mod", "move", "mut", "pub", "ref", "return", "self",
+    "Self", "static", "struct", "super", "trait", "true", "type", "unsafe",
+    "use", "where", "while",
+
+    // ===== Reserved keywords (not used yet) =====
+    "abstract", "become", "box", "do", "final", "gen", "macro", "override",
+    "priv", "try", "typeof", "unsized", "virtual", "yield",
+
+    // ===== Weak keywords (only keywords in some positions) =====
+    "'static", "macro_rules", "raw", "safe", "union",
+
+    // ===== Primitive types =====
+    "bool", "char", "str", "i8", "i16", "i32", "i64", "i128", "isize", "u8",
+    "u16", "u32", "u64", "u128", "usize", "f32", "f64",
+
+    // ===== Common prelude types and variants =====
+    "String", "Vec", "Option", "Result", "Box", "Some", "None", "Ok", "Err",
+
+    // ===== Common macros =====
+    "println!", "print!", "eprintln!", "eprint!", "format!", "vec!", "panic!",
+    "assert!", "assert_eq!", "assert_ne!", "todo!", "unimplemented!",
+    "unreachable!", "dbg!", "write!", "writeln!", "matches!", "macro_rules!", NULL
+};
+
+inline const char *KT_HL_keywords[] = {
+    // ===== Hard keywords (never usable as identifiers) =====
+    "as", "as?", "break", "class", "continue", "do", "else", "false", "for",
+    "fun", "if", "in", "!in", "interface", "is", "!is", "null", "object",
+    "package", "return", "super", "this", "throw", "true", "try", "typealias",
+    "typeof", "val", "var", "when", "while",
+
+    // ===== Soft keywords (only keywords in some positions) =====
+    "by", "catch", "constructor", "delegate", "dynamic", "field", "file",
+    "finally", "get", "import", "init", "param", "property", "receiver", "set",
+    "setparam", "value", "where",
+
+    // ===== Modifier keywords (only in declaration modifier lists) =====
+    "actual", "abstract", "annotation", "companion", "const", "crossinline",
+    "data", "enum", "expect", "external", "final", "infix", "inline", "inner",
+    "internal", "lateinit", "noinline", "open", "operator", "out", "override",
+    "private", "protected", "public", "reified", "sealed", "suspend",
+    "tailrec", "vararg",
+
+    // ===== Common built-in types =====
+    "Int", "Long", "Short", "Byte", "Float", "Double", "Boolean", "Char",
+    "String", "Unit", "Any", "Nothing", "Array", "List", "MutableList", "Map",
+    "MutableMap", "Set", "MutableSet", "Pair",
+
+    // ===== Common built-in functions =====
+    "println", "print", "listOf", "mutableListOf", "mapOf", "mutableMapOf",
+    "setOf", "mutableSetOf", "arrayOf", "readLine", "require", "check",
+    "error", "TODO", "lazy", "it", NULL
+};
+
+inline const char *SWIFT_HL_keywords[] = {
+    // ===== Declaration keywords =====
+    "associatedtype", "class", "deinit", "enum", "extension", "fileprivate",
+    "func", "import", "init", "inout", "internal", "let", "open", "operator",
+    "private", "precedencegroup", "protocol", "public", "rethrows", "static",
+    "struct", "subscript", "typealias", "var",
+
+    // ===== Statement keywords =====
+    "break", "case", "catch", "continue", "default", "defer", "do", "else",
+    "fallthrough", "for", "guard", "if", "in", "repeat", "return", "throw",
+    "switch", "where", "while",
+
+    // ===== Expression and type keywords =====
+    "Any", "as", "false", "is", "nil", "self", "Self", "super", "throws",
+    "true", "try",
+
+    // ===== Context-specific keywords (only keywords in some positions) =====
+    "associativity", "convenience", "didSet", "dynamic", "final", "get",
+    "indirect", "infix", "lazy", "left", "mutating", "none", "nonmutating",
+    "optional", "override", "postfix", "precedence", "prefix", "Protocol",
+    "required", "right", "set", "some", "Type", "unowned", "weak", "willSet",
+
+    // ===== Keywords that begin with # =====
+    "#available", "#colorLiteral", "#column", "#dsohandle", "#elseif",
+    "#else", "#endif", "#error", "#fileID", "#fileLiteral", "#filePath",
+    "#file", "#function", "#if", "#imageLiteral", "#keyPath", "#line",
+    "#selector", "#sourceLocation", "#warning",
+
+    // ===== Newer keywords missing from the page =====
+    "actor", "any", "async", "await", "borrowing", "consuming", "each",
+    "isolated", "macro", "nonisolated", "package",
+
+    // ===== Common attributes =====
+    "@available", "@objc", "@main", "@escaping", "@autoclosure",
+    "@discardableResult", "@MainActor", "@State", "@Binding", "@Published",
+    "@Environment", "@ObservedObject", "@StateObject",
+
+    // ===== Common built-in types =====
+    "Int", "UInt", "Double", "Float", "Bool", "String", "Character", "Array",
+    "Dictionary", "Set", "Optional", "Void", "Never", "Result", "Error",
+
+    // ===== Common built-in functions =====
+    "print", "debugPrint", "fatalError", "precondition", "assert", "min",
+    "max", "abs", "zip", "stride", NULL
+};

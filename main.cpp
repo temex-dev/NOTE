@@ -111,11 +111,11 @@ const char *JAVA_HL_extensions[] = { ".java", NULL };
 const char *CS_HL_extensions[] = { ".cs", ".csx", NULL };
 const char *TS_HL_extensions[] = { ".ts", ".tsx", ".mts", ".cts", NULL };
 const char *PHP_HL_extensions[] = { ".php", NULL };
-const char *PHP_HL_keywords_sets[] = { *PHP_HL_keywords, *HTML_HL_keywords };
-
-/* TODO: add these extensions:
-    sh|bash, go, rs, kt, swift, xml, yml|yaml
-*/
+const char *PHP_HL_keywords_sets[] = { *PHP_HL_keywords, *HTML_HL_keywords, *JS_HL_keywords, *CSS_HL_keywords };
+const char *GO_HL_extensions[] = { ".go", NULL };
+const char *RS_HL_extensions[] = { ".rs", NULL };
+const char *KT_HL_extensions[] = { ".kt", ".kts", NULL };
+const char *SWIFT_HL_extensions[] = { ".swift", NULL };
 
 struct editorSyntax HLDB[] = {
     {
@@ -140,7 +140,7 @@ struct editorSyntax HLDB[] = {
         HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
     },
     {
-        "js",
+        "javascript",
         JS_HL_extensions,
         JS_HL_keywords,
         "//", "/*", "*/",
@@ -154,7 +154,7 @@ struct editorSyntax HLDB[] = {
         HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
     },
     {
-        "py",
+        "python",
         PY_HL_extensions,
         PY_HL_keywords,
         "#", "", "",
@@ -168,14 +168,14 @@ struct editorSyntax HLDB[] = {
         HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
     },
     {
-        "cs",
+        "c#",
         CS_HL_extensions,
         CS_HL_keywords,
         "//", "/*", "*/",
         HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
     },
     {
-        "ts",
+        "typescript",
         TS_HL_extensions,
         TS_HL_keywords,
         "//", "/*", "*/",
@@ -187,8 +187,35 @@ struct editorSyntax HLDB[] = {
         PHP_HL_keywords_sets,
         "//", "/*", "*/",
         HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
+    },
+    {
+        "go",
+        GO_HL_extensions,
+        GO_HL_keywords,
+        "//", "/*", "*/",
+        HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
+    },
+    {
+        "rust",
+        RS_HL_extensions,
+        RS_HL_keywords,
+        "//", "/*", "*/",
+        HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
+    },
+    {
+        "kotlin",
+        KT_HL_extensions,
+        KT_HL_keywords,
+        "//", "/*", "*/",
+        HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
+    },
+    {
+        "swift",
+        SWIFT_HL_extensions,
+        SWIFT_HL_keywords,
+        "//", "/*", "*/",
+        HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
     }
-
 };
 
 #define HLDB_ENTRIES (sizeof(HLDB) / sizeof(HLDB[0]))
