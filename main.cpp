@@ -13,15 +13,14 @@
 #include <time.h>
 #include <stdarg.h>
 #include <fcntl.h>
+#include <fstream>
+#include <filesystem>
+#include <json/json.h>
 
 #include "keywords_lists.hpp"
 
 /*** defines ***/
-#define NOTE_VERSION "1.2.0"
-#define NOTE_TAB_STOP 4
-#define NOTE_QUIT_TIMES 3
-
-const char *CONFIG_LOCATION = "~/.config/note/config.json";
+#define NOTE_VERSION "1.3.0"
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 
@@ -95,7 +94,17 @@ struct editorConfig {
     struct editorSyntax *syntax;
     struct termios orig_termios;
     bool show_line_count;
+    int tab_stop;
+    int quit_confirmations;
+    int status_time_limit;
 };
+
+const char *DEFAULT_CONFIG = R"json({
+    "tab_spaces": 4,
+    "show_line_count": true,
+    "quit_confirmations": 3,
+    "status_time_limit": 5
+})json";
 
 struct editorConfig E;
 
@@ -224,6 +233,58 @@ struct editorSyntax HLDB[] = {
 void editorSetStatusMessage(const char *fmt, ...);
 void editorRefreshScreen();
 char *editorPrompt(const char *prompt, void (*callback)(char *, int));
+
+/*** config ***/
+std::filesystem::path createConfigPath() {
+    const char *xdgConfigHome = std::getenv("XDG_CONFIG_HOME");
+    const char *home = std::getenv("HOME");
+
+    std::filesystem::path base = xdgConfigHome
+        ? xdgConfigHome
+        : std::filesystem::path(home ? home : ".") / ".config";
+
+    return base / "NOTE" / "config.json";
+}
+bool existsConfigFile() {
+    return std::filesystem::exists(createConfigPath().string()) ? true : false;
+}
+void createConfigFile() {
+    const auto path = createConfigPath();
+    std::filesystem::create_directories(path.parent_path());
+
+    std::ofstream config(path);
+    config << DEFAULT_CONFIG;
+}
+void deleteConfig() {
+    if (existsConfigFile()) {
+        std::remove(createConfigPath().string().data());
+    }
+}
+void applyConfig(int tabs, bool lines, int quit, int time) {
+    E.tab_stop = tabs;
+    E.show_line_count = lines;
+    E.quit_confirmations = quit;
+    E.status_time_limit = time;
+}
+void readConfig() {
+    std::ifstream config_file(createConfigPath().string(), std::ifstream::binary);
+    Json::Value config;
+    config_file >> config;
+
+    applyConfig(
+        config.get("tab_spaces", E.tab_stop).asInt(),
+        config.get("show_line_count", E.show_line_count).asBool(),
+        config.get("quit_confirmations", E.quit_confirmations).asInt(),
+        config.get("status_time_limit", E.status_time_limit).asInt()
+    );
+}
+void initConfig() {
+    if (!existsConfigFile()) {
+        createConfigFile();
+    }
+    readConfig();
+}
+
 
 /*** terminal ***/
 void die(const char *s) {
@@ -540,7 +601,7 @@ int editorRowCxToRx(erow *row, int cx) {
     int j;
     for (j = 0; j < cx; j++) {
         if (row->chars[j] == '\t') {
-            rx += (NOTE_TAB_STOP -1) - (rx % NOTE_TAB_STOP);
+            rx += (E.tab_stop -1) - (rx % E.tab_stop);
         }
         rx++;
     }
@@ -551,7 +612,7 @@ int editorRowRxToCx(erow *row, int rx) {
     int cx;
     for (cx = 0; cx < row->size; cx++) {
         if (row->chars[cx] == '\t') {
-            cur_rx += (NOTE_TAB_STOP - 1) - (cur_rx & NOTE_TAB_STOP);
+            cur_rx += (E.tab_stop - 1) - (cur_rx & E.tab_stop);
         }
         cur_rx++;
 
@@ -567,13 +628,13 @@ void editorUpdateRow(erow *row) {
     }
 
     free(row->render);
-    row->render = static_cast<char *>(malloc(row->size + tabs * (NOTE_TAB_STOP - 1) +  1));
+    row->render = static_cast<char *>(malloc(row->size + tabs * (E.tab_stop - 1) +  1));
 
     int idx = 0;
     for (j = 0; j < row->size; j++) {
         if (row->chars[j] == '\t') {
             row->render[idx++] = ' ';
-            while (idx % NOTE_TAB_STOP != 0) { row->render[idx++] = ' '; }
+            while (idx % E.tab_stop != 0) { row->render[idx++] = ' '; }
         }
         else {
             row->render[idx++] = row->chars[j];
@@ -1001,7 +1062,7 @@ void editorDrawMessageBar(struct abuf *ab) {
     abAppend(ab, "\x1b[K", 3);
     int msglen = strlen(E.statusmsg);
     if (msglen > E.screencols) { msglen = E.screencols; }
-    if (msglen && time(NULL) - E.statusmsg_time < 5) {
+    if (msglen && time(NULL) - E.statusmsg_time < E.status_time_limit) {
         abAppend(ab, E.statusmsg, msglen);
     }
 }
@@ -1187,7 +1248,7 @@ void editorJumpCursor(int c) {
     }
 }
 void editorProcessKeypress() {
-    static int quit_times = NOTE_QUIT_TIMES;
+    static int quit_times = E.quit_confirmations;
 
     int c = editorReadKey();
 
@@ -1202,7 +1263,7 @@ void editorProcessKeypress() {
                 quit_times--;
                 return;
             }
-            quit_times = NOTE_QUIT_TIMES;
+            quit_times = E.quit_confirmations;
             write(STDOUT_FILENO, "\x1b[2J", 4);
             write(STDOUT_FILENO, "\x1b[H", 3);
             exit(0);
@@ -1305,6 +1366,9 @@ void initEditor() {
     E.statusmsg_time = 0;
     E.syntax = NULL;
     E.show_line_count = true;
+    E.tab_stop = 4;
+    E.quit_confirmations = 3;
+    E.status_time_limit = 5;
 
     if (getWindowSize(&E.screenrows, &E.screencols) == -1) die("getWindowSize");
     E.screenrows -= 2;
@@ -1313,16 +1377,24 @@ void initEditor() {
 int main(int argc, char *argv[]) {
     enableRawMode();
     initEditor();
+    initConfig();
+
     if (argc >= 2) {
         if (strcmp(argv[1], "--config-edit") == 0) {
-            editorOpen((char *)"~/.config/note/config.json");
+            std::string configFilePath = createConfigPath().string();
+            editorOpen(configFilePath.data());
         }
         else if (strcmp(argv[1], "--config-path") == 0) {
-            printf(CONFIG_LOCATION, "~ config file location: %d");
+            std::cout << "Config location: " << "'" << createConfigPath().string() << "'";
+            return 0;
+        }
+        else if (strcmp(argv[1], "--config-default") == 0) {
+            deleteConfig();
+            initConfig();
             return 0;
         }
         else if (strcmp(argv[1], "--help") == 0) {
-            printf("help");
+            printf("under construction");
             return 0;
         }
         else {
@@ -1337,8 +1409,5 @@ int main(int argc, char *argv[]) {
         editorProcessKeypress();
     }
 
-//this is here just so clang tidy doesn't scream at me
-//about not using directly <iostream> :-)
-    std::cout << "";
     return 0;
 }

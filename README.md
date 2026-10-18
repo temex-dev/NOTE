@@ -37,8 +37,8 @@ It follows the original Kilo editor concept and rewrites the implementation from
 - [ ] Undo (Ctrl + Z)
 - [ ] Duplicate current line (Ctrl + D)
 - [ ] Better cursor movement (more shortcuts)
-- [ ] Config file
-- [x] More filetypes syntax hightlighting
+- [x] ~Config file~
+- [x] ~More filetypes syntax hightlighting~
 - [ ] Install script
 
 ## Build
