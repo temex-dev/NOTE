@@ -773,7 +773,7 @@ char *editorRowsToString(int *buflen) {
 
     return buf;
 }
-void editorOpen(char *filename) {
+void editorOpen(const char *filename) {
     free(E.filename);
     E.filename = strdup(filename);
 
@@ -795,6 +795,33 @@ void editorOpen(char *filename) {
     free(line);
     fclose(fp);
     E.dirty = 0;
+}
+bool editorHandleArgs(const char argv[]) {
+    if (strcmp(argv, "--config-edit") == 0) {
+        std::string configFilePath = createConfigPath().string();
+        editorOpen(configFilePath.data());
+        return true;
+    }
+    else if (strcmp(argv, "--config-path") == 0) {
+        std::cout << "Config location: '" << createConfigPath().string() << "'\n";
+        return false;
+    }
+    else if (strcmp(argv, "--config-default") == 0) {
+        deleteConfig();
+        initConfig();
+        return false;
+    }
+    else if (strcmp(argv, "--help") == 0) {
+        printf("Usage: NOTE [file]\n"
+               "       NOTE --config-edit\n"
+               "       NOTE --config-path\n"
+               "       NOTE --config-default\n");
+        return false;
+    }
+    else {
+        editorOpen(argv);
+        return true;
+    }
 }
 void editorSave() {
     if (E.filename == NULL) {
@@ -1375,32 +1402,20 @@ void initEditor() {
 }
 
 int main(int argc, char *argv[]) {
-    enableRawMode();
-    initEditor();
-    initConfig();
 
-    if (argc >= 2) {
-        if (strcmp(argv[1], "--config-edit") == 0) {
-            std::string configFilePath = createConfigPath().string();
-            editorOpen(configFilePath.data());
-        }
-        else if (strcmp(argv[1], "--config-path") == 0) {
-            std::cout << "Config location: " << "'" << createConfigPath().string() << "'";
-            return 0;
-        }
-        else if (strcmp(argv[1], "--config-default") == 0) {
-            deleteConfig();
-            initConfig();
-            return 0;
-        }
-        else if (strcmp(argv[1], "--help") == 0) {
-            printf("under construction");
-            return 0;
-        }
-        else {
-            editorOpen(argv[1]);
-        }
+    if (argc > 2) {
+        std::cout << "NOTE currently accepts one file or one option at a time.\n";
+        return 2;
     }
+
+    initEditor();
+
+    if (argc >= 2 && !editorHandleArgs(argv[1])) {
+        return 0;
+    }
+
+    enableRawMode();
+    initConfig();
 
     editorSetStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find | Ctrl-G = go to");
 
