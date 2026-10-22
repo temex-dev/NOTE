@@ -35,7 +35,7 @@ It follows the original Kilo editor concept and rewrites the implementation from
 - [ ] Select text
 - [ ] Copy and paste text (Ctrl + X, C, V)
 - [ ] Undo (Ctrl + Z)
-- [ ] Duplicate current line (Ctrl + D)
+- [x] ~Duplicate current line (Ctrl + D)~
 - [ ] Better cursor movement (more shortcuts)
 - [x] ~Config file~
 - [x] ~More filetypes syntax hightlighting~

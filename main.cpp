@@ -20,7 +20,7 @@
 #include "keywords_lists.hpp"
 
 /*** defines ***/
-#define NOTE_VERSION "1.3.0"
+#define NOTE_VERSION "1.4.0"
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 
@@ -1274,6 +1274,12 @@ void editorJumpCursor(int c) {
         E.cx = E.row[E.cy].size;
     }
 }
+void editorDuplicateLine() {
+    if (E.cy >= E.numrows) return;
+
+    editorInsertRow(E.cy + 1, E.row[E.cy].chars, E.row[E.cy].size);
+    E.cy++;
+}
 void editorProcessKeypress() {
     static int quit_times = E.quit_confirmations;
 
@@ -1306,6 +1312,10 @@ void editorProcessKeypress() {
 
         case CTRL_KEY('g'):
             editorGoToLine();
+            break;
+
+        case CTRL_KEY('d'):
+            editorDuplicateLine();
             break;
 
         case HOME_KEY:
