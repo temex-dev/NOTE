@@ -20,7 +20,7 @@
 #include "keywords_lists.hpp"
 
 /*** defines ***/
-#define NOTE_VERSION "1.4.0"
+#define NOTE_VERSION "1.4.1"
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 
@@ -97,6 +97,7 @@ struct editorConfig {
     int tab_stop;
     int quit_confirmations;
     int status_time_limit;
+    bool statusmsg_is_error;
 };
 
 const char *DEFAULT_CONFIG = R"json({
@@ -106,7 +107,13 @@ const char *DEFAULT_CONFIG = R"json({
     "status_time_limit": 5
 })json";
 
+struct error {
+    bool exists;
+    std::string message;
+};
+
 struct editorConfig E;
+struct error ERR;
 
 /*** filetypes ***/
 const char *C_HL_extensions[] = { ".c", ".h", ".cpp", ".hpp", NULL };
@@ -267,16 +274,98 @@ void applyConfig(int tabs, bool lines, int quit, int time) {
     E.status_time_limit = time;
 }
 void readConfig() {
-    std::ifstream config_file(createConfigPath().string(), std::ifstream::binary);
-    Json::Value config;
-    config_file >> config;
+    ERR.exists = false;
+    ERR.message = "";
 
-    applyConfig(
-        config.get("tab_spaces", E.tab_stop).asInt(),
-        config.get("show_line_count", E.show_line_count).asBool(),
-        config.get("quit_confirmations", E.quit_confirmations).asInt(),
-        config.get("status_time_limit", E.status_time_limit).asInt()
-    );
+    Json::Value config;
+    try {
+        std::ifstream config_file(createConfigPath().string(), std::ifstream::binary);
+        if (!config_file) {
+            ERR.exists = true;
+            ERR.message += "Couldn't open config file.";
+            return;
+        }
+        config_file >> config;
+    }
+    catch (const std::exception &e) {
+        ERR.exists = true;
+        ERR.message += e.what();
+    }
+
+    unsigned int tab = 4;
+    unsigned int status = 5;
+    unsigned int quit = 3;
+    bool lines = true;
+
+    const Json::Value& tabValue = config["tab_spaces"];
+    if (!tabValue.isInt() || tabValue.asInt() <= 0) {
+        std::ostringstream message;
+        message << "Config 'tab_spaces' can't read '";
+
+        if (tabValue.isNull()) { message << "<missing>"; }
+        else { message << tabValue; }
+
+        message << "'; using default '4'. ";
+
+        ERR.exists = true;
+        ERR.message += message.str();
+    }
+    else { tab = tabValue.asUInt(); }
+
+    const Json::Value &linesValue = config["show_line_count"];
+    if (!linesValue.isBool()) {
+        std::ostringstream message;
+        message << "Config 'show_line_count' can't read '";
+
+        if (linesValue.isNull()) { message << "<missing>"; }
+        else { message << linesValue; }
+
+        message << "'; using default 'true'. ";
+
+        ERR.exists = true;
+        ERR.message += message.str();
+    }
+    else { lines = linesValue.asBool(); }
+
+    const Json::Value &quitValue = config["quit_confirmations"];
+    if (!quitValue.isInt() || quitValue.asInt() < 0) {
+        std::ostringstream message;
+        message << "Config 'quit_confirmations' can't read '";
+
+        if (quitValue.isNull()) { message << "<missing>"; }
+        else { message << quitValue; }
+
+        message << "'; using default '3'. ";
+
+        ERR.exists = true;
+        ERR.message += message.str();
+    }
+    else { quit = quitValue.asUInt(); }
+
+    const Json::Value &statusValue = config["status_time_limit"];
+    if (!statusValue.isInt() || statusValue.asInt() < 0) {
+        std::ostringstream message;
+        message << "Config 'status_time_limit' can't read '";
+
+        if (statusValue.isNull()) { message << "<missing>"; }
+        else { message << statusValue; }
+
+        message << "'; using default '5'. ";
+
+        ERR.exists = true;
+        ERR.message += message.str();
+    }
+    else { status = statusValue.asUInt(); }
+
+    const std::string suffix = ", and more...";
+    const size_t maxLength = sizeof(E.statusmsg) - 1;
+
+    if (ERR.message.length() > maxLength) {
+        ERR.message.resize(maxLength - suffix.length());
+        ERR.message += suffix;
+    }
+
+    applyConfig(tab, lines, quit, status);
 }
 void initConfig() {
     if (!existsConfigFile()) {
@@ -1087,10 +1176,22 @@ void editorDrawStatusBar(struct abuf *ab) {
 }
 void editorDrawMessageBar(struct abuf *ab) {
     abAppend(ab, "\x1b[K", 3);
+
     int msglen = strlen(E.statusmsg);
-    if (msglen > E.screencols) { msglen = E.screencols; }
+    if (msglen > E.screencols) {
+        msglen = E.screencols;
+    }
+
     if (msglen && time(NULL) - E.statusmsg_time < E.status_time_limit) {
+        if (E.statusmsg_is_error) {
+            abAppend(ab, "\x1b[41;97m", 8);
+        }
+
         abAppend(ab, E.statusmsg, msglen);
+
+        if (E.statusmsg_is_error) {
+            abAppend(ab, "\x1b[0m", 4);
+        }
     }
 }
 void editorRefreshScreen() {
@@ -1121,6 +1222,16 @@ void editorSetStatusMessage(const char *fmt, ...) {
     vsnprintf(E.statusmsg, sizeof(E.statusmsg), fmt, ap);
     va_end(ap);
     E.statusmsg_time = time(NULL);
+    E.statusmsg_is_error = false;
+}
+void editorSetErrorStatusMessage(const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(E.statusmsg, sizeof(E.statusmsg), fmt, ap);
+    va_end(ap);
+
+    E.statusmsg_time = time(NULL);
+    E.statusmsg_is_error = true;
 }
 
 /*** input ***/
@@ -1412,7 +1523,6 @@ void initEditor() {
 }
 
 int main(int argc, char *argv[]) {
-
     if (argc > 2) {
         std::cout << "NOTE currently accepts one file or one option at a time.\n";
         return 2;
@@ -1428,6 +1538,10 @@ int main(int argc, char *argv[]) {
     initConfig();
 
     editorSetStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find | Ctrl-G = go to");
+
+    if (ERR.exists) {
+        editorSetErrorStatusMessage("%s", ERR.message.c_str());
+    }
 
     while(1) {
         editorRefreshScreen();
