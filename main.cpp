@@ -20,7 +20,7 @@
 #include "keywords_lists.hpp"
 
 /*** defines ***/
-#define NOTE_VERSION "1.4.1"
+#define NOTE_VERSION "1.4.2"
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 
@@ -1059,7 +1059,10 @@ void editorScroll() {
     if (E.rx < E.coloff) {
         E.coloff = E.rx;
     }
-    if (E.rx >= E.coloff + text_screen_width) {
+    if (text_screen_width > 1 && E.rx >= E.coloff + text_screen_width - 1) {
+        E.coloff = E.rx - text_screen_width + 2;
+    }
+    else if (text_screen_width <= 1 && E.rx >= E.coloff + text_screen_width) {
         E.coloff = E.rx - text_screen_width + 1;
     }
 }
@@ -1101,16 +1104,31 @@ void editorDrawRows(struct abuf *ab) {
             if (row_offset > E.row[filerow].rsize) {
                 row_offset = E.row[filerow].rsize;
             }
-            int len = E.row[filerow].rsize - row_offset;
+            bool show_left_indicator = text_screen_width > 1 && E.coloff > 0 &&
+                E.row[filerow].rsize > 0 &&
+                !(filerow == E.cy && E.rx == E.coloff);
+            bool show_right_indicator = text_screen_width > 1 &&
+                E.row[filerow].rsize > row_offset + text_screen_width - 1;
+            int first_char = row_offset + (show_left_indicator ? 1 : 0);
+            int visible_width = text_screen_width - (show_left_indicator ? 1 : 0) -
+                (show_right_indicator ? 1 : 0);
+            int len = E.row[filerow].rsize - first_char;
             if (len < 0) { len = 0; }
-            if (len > text_screen_width) { len = text_screen_width; }
+            if (len > visible_width) { len = visible_width; }
             if (gutter_width > 0) {
                 char line_number[16];
                 int number_len = snprintf(line_number, sizeof(line_number), "%*d ", gutter_width - 1, filerow + 1);
                 abAppend(ab, line_number, number_len);
             }
-            char *c = &E.row[filerow].render[row_offset];
-            unsigned char *hl = &E.row[filerow].hl[row_offset];
+            if (show_left_indicator) {
+                abAppend(ab, "\x1b[7m<\x1b[m", 8);
+            }
+            char *c = E.row[filerow].render
+                ? &E.row[filerow].render[first_char]
+                : NULL;
+            unsigned char *hl = E.row[filerow].hl
+                ? &E.row[filerow].hl[first_char]
+                : NULL;
             int current_color = -1;
             int j;
             for (j = 0; j < len; j++) {
@@ -1142,6 +1160,9 @@ void editorDrawRows(struct abuf *ab) {
                     }
                     abAppend(ab, &c[j], 1);
                 }
+            }
+            if (show_right_indicator) {
+                abAppend(ab, "\x1b[7m>\x1b[m", 8);
             }
             abAppend(ab, "\x1b[39m", 5);
         }
@@ -1543,7 +1564,7 @@ int main(int argc, char *argv[]) {
         editorSetErrorStatusMessage("%s", ERR.message.c_str());
     }
 
-    while(1) {
+    while (1) {
         editorRefreshScreen();
         editorProcessKeypress();
     }
