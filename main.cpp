@@ -32,6 +32,8 @@ enum editorKey {
     ARROW_UP,
     ARROW_DOWN,
     DEL_KEY,
+    CTRL_DEL_KEY,
+    CTRL_BACKSPACE_KEY,
     HOME_KEY,
     END_KEY,
     PAGE_UP,
@@ -412,7 +414,7 @@ int editorReadKey() {
     }
 
     if (c == '\x1b') {
-        char seq[5];
+        char seq[10];
 
         if (read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
         if (read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
@@ -454,6 +456,15 @@ int editorReadKey() {
                         }
                     }
                 }
+                else if (seq[2] == '2') {
+                    if (read(STDIN_FILENO, &seq[3], 1) != 1) return '\x1b';
+                    if (seq[3] == '7' &&
+                        read(STDIN_FILENO, &seq[4], 1) == 1 && seq[4] == ';' &&
+                        read(STDIN_FILENO, &seq[5], 1) == 1 && seq[5] == '5' &&
+                        read(STDIN_FILENO, &seq[6], 1) == 1 && seq[6] == 'u') {
+                        return CTRL_BACKSPACE_KEY;
+                    }
+                }
             }
             if (seq[1] >= '0' && seq[1] <= '9') {
                 if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
@@ -467,6 +478,23 @@ int editorReadKey() {
                         case '7': return HOME_KEY;
                         case '8': return END_KEY;
                     }
+                }
+                else if (seq[2] == ';' && seq[1] == '3') {
+                    if (read(STDIN_FILENO, &seq[3], 1) != 1) return '\x1b';
+                    if (seq[3] == '5') {
+                        if (read(STDIN_FILENO, &seq[4], 1) != 1) return '\x1b';
+                        if (seq[4] == '~') return CTRL_DEL_KEY;
+                    }
+                }
+                else if (seq[1] == '2' && seq[2] == '7' &&
+                    read(STDIN_FILENO, &seq[3], 1) == 1 && seq[3] == ';' &&
+                    read(STDIN_FILENO, &seq[4], 1) == 1 && seq[4] == '5' &&
+                    read(STDIN_FILENO, &seq[5], 1) == 1 && seq[5] == ';' &&
+                    read(STDIN_FILENO, &seq[6], 1) == 1 && seq[6] == '1' &&
+                    read(STDIN_FILENO, &seq[7], 1) == 1 && seq[7] == '2' &&
+                    read(STDIN_FILENO, &seq[8], 1) == 1 && seq[8] == '7' &&
+                    read(STDIN_FILENO, &seq[9], 1) == 1 && seq[9] == '~') {
+                    return CTRL_BACKSPACE_KEY;
                 }
             }
             else {
@@ -1352,31 +1380,37 @@ void editorMoveCursor(int key) {
         E.cx = rowlen;
     }
 }
+int editorWordBoundary(const erow *row, int cx, bool forward) {
+    if (forward) {
+        while (cx < row->size && row->chars[cx] != ' ' && row->chars[cx] != '\t') {
+            cx++;
+        }
+        while (cx < row->size && (row->chars[cx] == ' ' || row->chars[cx] == '\t')) {
+            cx++;
+        }
+    }
+    else {
+        while (cx > 0 && (row->chars[cx - 1] == ' ' || row->chars[cx - 1] == '\t')) {
+            cx--;
+        }
+        while (cx > 0 && row->chars[cx - 1] != ' ' && row->chars[cx - 1] != '\t') {
+            cx--;
+        }
+    }
+    return cx;
+}
 void editorJumpCursor(int c) {
     erow *row = (E.cy >= E.numrows) ? NULL : &E.row[E.cy];
 
     switch (c) {
         case CTRL_ARROW_RIGHT:
             if (row == NULL) break;
-
-            while (E.cx < row->size && row->chars[E.cx] != ' ' && row->chars[E.cx] != '\t') {
-                E.cx++;
-            }
-            while (E.cx < row->size &&
-                (row->chars[E.cx] == ' ' || row->chars[E.cx] == '\t')) {
-                E.cx++;
-            }
+            E.cx = editorWordBoundary(row, E.cx, true);
             break;
 
         case CTRL_ARROW_LEFT:
             if (row == NULL) break;
-
-            while (E.cx > 0 && (row->chars[E.cx - 1] == ' ' || row->chars[E.cx - 1] == '\t')) {
-                E.cx--;
-            }
-            while (E.cx > 0 && row->chars[E.cx - 1] != ' ' && row->chars[E.cx - 1] != '\t') {
-                E.cx--;
-            }
+            E.cx = editorWordBoundary(row, E.cx, false);
             break;
         case CTRL_ARROW_DOWN:
             if (E.cy >= E.numrows) break;
@@ -1411,6 +1445,33 @@ void editorDuplicateLine() {
 
     editorInsertRow(E.cy + 1, E.row[E.cy].chars, E.row[E.cy].size);
     E.cy++;
+}
+void editorDeleteWordForward() {
+    if (E.cy >= E.numrows) return;
+
+    erow *row = &E.row[E.cy];
+    int end = editorWordBoundary(row, E.cx, true);
+    if (end == E.cx) return;
+
+    int deleted = end - E.cx;
+    memmove(&row->chars[E.cx], &row->chars[end], row->size - end + 1);
+    row->size -= deleted;
+    editorUpdateRow(row);
+    E.dirty++;
+}
+void editorDeleteWordBackward() {
+    if (E.cy >= E.numrows) return;
+
+    erow *row = &E.row[E.cy];
+    int start = editorWordBoundary(row, E.cx, false);
+    if (start == E.cx) return;
+
+    int deleted = E.cx - start;
+    memmove(&row->chars[start], &row->chars[E.cx], row->size - E.cx + 1);
+    row->size -= deleted;
+    E.cx = start;
+    editorUpdateRow(row);
+    E.dirty++;
 }
 void editorProcessKeypress() {
     static int quit_times = E.quit_confirmations;
@@ -1464,6 +1525,12 @@ void editorProcessKeypress() {
             if (c == DEL_KEY) { editorMoveCursor(ARROW_RIGHT); }
             editorDelChar();
             break;
+        case CTRL_DEL_KEY:
+            editorDeleteWordForward();
+            break;
+        case CTRL_BACKSPACE_KEY:
+            editorDeleteWordBackward();
+            break;
 
         case PAGE_UP:
         case PAGE_DOWN:
@@ -1506,8 +1573,10 @@ void editorProcessKeypress() {
             break;
 
         case BACKSPACE:
-        case CTRL_KEY('h'):
             editorDelChar();
+            break;
+        case CTRL_KEY('h'):
+            editorDeleteWordBackward();
             break;
 
         case CTRL_KEY('l'):

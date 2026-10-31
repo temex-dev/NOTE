@@ -30,6 +30,18 @@ It follows the original Kilo editor concept and rewrites the implementation from
 - Ctrl + G
   - Go to line
 
+## Usage
+After [installation](#installation) everytime you run this app it checks if config file exists `/home/user/.config/NOTE/config.json`, if doesn't, it will create one there with default settings.
+
+| Command | Usage |
+| :- | :- |
+| `NOTE [file]` | opens file in NOTE |
+| `NOTE --help` | prints this list of commands |
+| `NOTE --config-edit` | opens config file in NOTE |
+| `NOTE --config-path` | prints path to config |
+| `NOTE --config-default` | overwrites config into default values |
+
+
 ## Roadmap checklist
 - [x] ~Line counter~
 - [ ] Select text
@@ -41,7 +53,7 @@ It follows the original Kilo editor concept and rewrites the implementation from
 - [x] ~More filetypes syntax hightlighting~
 - [ ] Install script
 
-## Build
+## Installation
 From the project root:
 
 ```bash
